@@ -1,13 +1,11 @@
-package com.julien.saevecke.learner.sul;
+package com.julien.saevecke.learner;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SulApplication {
-
+public class LearnerApplication {
 	public static void main(String[] args) {
-		SpringApplication.run(SulApplication.class, args);
+		SpringApplication.run(LearnerApplication.class, args);
 	}
-
 }
