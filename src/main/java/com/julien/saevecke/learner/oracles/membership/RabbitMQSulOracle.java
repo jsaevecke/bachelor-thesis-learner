@@ -1,14 +1,13 @@
 package com.julien.saevecke.learner.oracles.membership;
 
 import com.julien.saevecke.learner.config.rabbitmq.RabbitMQConfig;
-import com.julien.saevecke.learner.messages.MembershipQuery;
+import com.julien.saevecke.learner.sul.messages.MembershipQuery;
 import com.julien.saevecke.learner.proxy.DefaultQueryProxy;
 import de.learnlib.api.oracle.MembershipOracle.MealyMembershipOracle;
 import de.learnlib.api.query.DefaultQuery;
 import de.learnlib.api.query.Query;
 import net.automatalib.words.Word;
 import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +15,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> {
@@ -31,6 +31,8 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
             var defaultQuery = (DefaultQuery<String, Word<String>>)rawQuery;
             var query = new MembershipQuery(uuid, DefaultQueryProxy.createFrom(defaultQuery));
             sentQueries.put(uuid, defaultQuery);
+
+            System.out.println("Sent query: " + query.getQuery().getPrefix() + " | " + query.getQuery().getSuffix());
 
             template.convertAndSend(
                     RabbitMQConfig.SUL_DIRECT_EXCHANGE,
@@ -48,8 +50,32 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
             var completed = false;
 
             while(!completed) {
-                System.out.println("Waiting for completion...");
                 completed = true;
+                var message = template.receiveAndConvert(RabbitMQConfig.SUL_OUTPUT_QUEUE);
+                if (message == null) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(50);
+                        completed = false;
+                        continue;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                var query = (MembershipQuery)message;
+
+                if(sentQueries.containsKey(query.getUuid())) {
+                    var defaultQuery = sentQueries.get(query.getUuid());
+                    defaultQuery.answer(Word.fromList(query.getQuery().getOutput()));
+
+                    System.out.println("Received: " + query.getQuery().getPrefix() + " | " + query.getQuery().getSuffix() + " --> " + query.getQuery().getOutput());
+                } else {
+                    System.out.println("Unknown message received - drop!");
+                    completed = false;
+                    continue;
+                }
+
+                //TODO: can be done more efficient
                 for (Query<String, Word<String>> rawQuery : queries) {
                     var defaultQuery = (DefaultQuery<String, Word<String>>)rawQuery;
                     if(defaultQuery.getOutput() == null || defaultQuery.getOutput().isEmpty()){
@@ -59,7 +85,7 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
                 }
             }
 
-            System.out.println("Completed!");
+            System.out.println("All messages answered!");
 
             sentQueries.clear();
 
@@ -75,7 +101,7 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
         }
     }
 
-    @RabbitListener(queues = RabbitMQConfig.SUL_OUTPUT_QUEUE)
+    /*
     public void consume(MembershipQuery query) {
         System.out.println("Message received from queue: " + query.toString());
 
@@ -85,5 +111,5 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
 
         var defaultQuery = sentQueries.get(query.getUuid());
         defaultQuery.answer(Word.fromList(query.getQuery().getOutput()));
-    }
+    }*/
 }

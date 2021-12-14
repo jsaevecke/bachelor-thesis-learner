@@ -1,4 +1,4 @@
-package com.julien.saevecke.learner.messages;
+package com.julien.saevecke.learner.sul.messages;
 
 import com.julien.saevecke.learner.proxy.DefaultQueryProxy;
 import lombok.AllArgsConstructor;
