@@ -48,6 +48,7 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
         // wait until all queries are answered
         Thread newThread = new Thread(()->{
             var completed = false;
+            var queriesAnswered = 0;
 
             while(!completed) {
                 completed = true;
@@ -67,21 +68,15 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
                 if(sentQueries.containsKey(query.getUuid())) {
                     var defaultQuery = sentQueries.get(query.getUuid());
                     defaultQuery.answer(Word.fromList(query.getQuery().getOutput()));
+                    queriesAnswered++;
+
+                    if(queriesAnswered != sentQueries.size())
+                        completed = false;
 
                     System.out.println("Received: " + query.getQuery().getPrefix() + " | " + query.getQuery().getSuffix() + " --> " + query.getQuery().getOutput());
                 } else {
                     System.out.println("Unknown message received - drop!");
                     completed = false;
-                    continue;
-                }
-
-                //TODO: can be done more efficient
-                for (Query<String, Word<String>> rawQuery : queries) {
-                    var defaultQuery = (DefaultQuery<String, Word<String>>)rawQuery;
-                    if(defaultQuery.getOutput() == null || defaultQuery.getOutput().isEmpty()){
-                        completed = false;
-                        break;
-                    }
                 }
             }
 
@@ -100,16 +95,4 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
             e.printStackTrace();
         }
     }
-
-    /*
-    public void consume(MembershipQuery query) {
-        System.out.println("Message received from queue: " + query.toString());
-
-        if(!sentQueries.containsKey(query.getUuid())) {
-            return;
-        }
-
-        var defaultQuery = sentQueries.get(query.getUuid());
-        defaultQuery.answer(Word.fromList(query.getQuery().getOutput()));
-    }*/
 }
