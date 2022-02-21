@@ -4,13 +4,15 @@ import com.julien.saevecke.learner.oracles.membership.RabbitMQSulOracle;
 import de.learnlib.algorithms.dhc.mealy.MealyDHC;
 import de.learnlib.api.query.DefaultQuery;
 import de.learnlib.oracle.equivalence.CompleteExplorationEQOracle;
-import net.automatalib.automata.concepts.Output;
+import net.automatalib.serialization.dot.GraphDOT;
 import net.automatalib.words.Word;
 import net.automatalib.words.impl.Alphabets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.io.StringWriter;
 
 @Configuration
 public class Experiment {
@@ -45,10 +47,19 @@ public class Experiment {
         } while (counterexample != null);
         System.out.println("Learning complete");
 
+        final var model = learner.getHypothesisModel();
+
+        try {
+            final var sw = new StringWriter();
+            GraphDOT.write(model, alphabet, sw);
+            System.out.println(sw);
+        } catch (IOException e) {
+            //
+        }
+
         long finish = System.nanoTime();
         long timeElapsed = finish - start;
 
-        // TODO: can be reduced by disable printing
         System.out.println("Learn time: " + timeElapsed/1000000 + " ms");
     }
 }
