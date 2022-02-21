@@ -54,13 +54,8 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
                 completed = true;
                 var message = template.receiveAndConvert(RabbitMQConfig.SUL_OUTPUT_QUEUE);
                 if (message == null) {
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(50);
-                        completed = false;
-                        continue;
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    completed = false;
+                    continue;
                 }
 
                 var query = (MembershipQuery)message;
