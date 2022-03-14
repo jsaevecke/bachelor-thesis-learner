@@ -19,6 +19,9 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> {
+    public static final String UNKNOWN = "unknown";
+    public static final int DELAY_IN_SECONDS = 1;
+
     @Autowired
     AmqpTemplate template;
 
@@ -29,7 +32,7 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
         for (Query<String, Word<String>> rawQuery : queries) {
             var uuid = UUID.randomUUID();
             var defaultQuery = (DefaultQuery<String, Word<String>>)rawQuery;
-            var query = new MembershipQuery(uuid, DefaultQueryProxy.createFrom(defaultQuery));
+            var query = new MembershipQuery(uuid, UNKNOWN, DELAY_IN_SECONDS, DefaultQueryProxy.createFrom(defaultQuery));
             sentQueries.put(uuid, defaultQuery);
 
             System.out.println("Sent query: " + query.getQuery().getPrefix() + " | " + query.getQuery().getSuffix());
@@ -40,8 +43,6 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
                     query
             );
         }
-
-        System.out.println("Messages sent!");
 
         var latch = new CountDownLatch(1);
 
@@ -68,14 +69,12 @@ public class RabbitMQSulOracle implements MealyMembershipOracle<String, String> 
                     if(queriesAnswered != sentQueries.size())
                         completed = false;
 
-                    System.out.println("Received: " + query.getQuery().getPrefix() + " | " + query.getQuery().getSuffix() + " --> " + query.getQuery().getOutput());
+                    System.out.println("Received from " + query.getPodName() + ": " + query.getQuery().getPrefix() + " | " + query.getQuery().getSuffix() + " --> " + query.getQuery().getOutput());
                 } else {
                     System.out.println("Unknown message received - drop!");
                     completed = false;
                 }
             }
-
-            System.out.println("All messages answered!");
 
             sentQueries.clear();
 

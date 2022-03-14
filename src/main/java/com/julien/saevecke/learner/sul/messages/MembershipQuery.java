@@ -13,8 +13,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @ToString
 public class MembershipQuery {
-    // uuid identifies the MembershipQuery
+    // uuid identifies the MembershipQuery (set by publisher)
     UUID uuid;
-    // query represents the query itself
+    // contains pod name that answered the query (set by consumer)
+    String podName;
+    // artificial processing delay in seconds (set by publisher)
+    int delayInSeconds;
+    // query represents the query itself (set by publisher, modified by consumer)
     DefaultQueryProxy query;
 }
