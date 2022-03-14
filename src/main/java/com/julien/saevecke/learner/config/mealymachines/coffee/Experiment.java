@@ -2,8 +2,10 @@ package com.julien.saevecke.learner.config.mealymachines.coffee;
 
 import com.julien.saevecke.learner.oracles.membership.RabbitMQSulOracle;
 import de.learnlib.algorithms.dhc.mealy.MealyDHC;
+import de.learnlib.algorithms.ttt.mealy.TTTLearnerMealy;
 import de.learnlib.api.query.DefaultQuery;
 import de.learnlib.oracle.equivalence.CompleteExplorationEQOracle;
+import de.learnlib.oracle.equivalence.WpMethodEQOracle;
 import net.automatalib.serialization.dot.GraphDOT;
 import net.automatalib.words.Word;
 import net.automatalib.words.impl.Alphabets;
@@ -28,7 +30,8 @@ public class Experiment {
     public void learn() {
         var alphabet = Alphabets.fromArray(POD, CLEAN, WATER, BUTTON);
         var learner = new MealyDHC<>(alphabet, membershipOracle);
-        var eq = new CompleteExplorationEQOracle<>(membershipOracle, 2, 3);
+        //TTTLearnerMealy<>
+        var eq = new WpMethodEQOracle<>(membershipOracle, 3);
 
         DefaultQuery<String, Word<String>> counterexample = null;
         long start = System.nanoTime();
